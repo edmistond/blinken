@@ -11,6 +11,7 @@ Blinken is a local-first Go CLI that lets coding agents record consequential gue
 ## Working conventions
 
 - Checkpoint every turn or major change as a git commit so work can be rolled back.
+- Use `blinken` itself while working here: start a session, record guesses at the moment of ambiguity. Never run `purge` against the default database; point destructive tests at `--db /tmp/...`.
 - `blinken.png` is the project logo.
 
 ## Layout
@@ -21,6 +22,7 @@ Blinken is a local-first Go CLI that lets coding agents record consequential gue
 - `internal/server` is the loopback-only review server.
 - `web/` holds the browser UI, embedded with `//go:embed`.
 - `docs/` holds the output-format contract, example sessions, and Phase 0 decisions.
+- `skills/blinken/SKILL.md` is the reference guidance for coding agents on when and how to record a guess.
 
 ## Build and test
 

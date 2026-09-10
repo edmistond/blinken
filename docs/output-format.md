@@ -5,11 +5,20 @@ across releases; changes are breaking changes.
 
 ## Write commands
 
-`guess`, `accept`, `reject`, `followup`, `session start`, `session end` print
-exactly one line on success: the affected identifier. `--quiet` prints nothing.
+`guess`, `accept`, `reject`, `followup`, `delete`, `session start`, and
+`session end` print exactly one line on success: the affected identifier.
+`--quiet` prints nothing.
+
+Bulk forms (`accept|reject|followup|delete --all`, `purge --hard`) print the
+number of affected guesses on success. They require confirmation on a
+terminal and refuse with exit code 2 when stdin is not a terminal unless
+`--yes` is passed. When nothing matches they print a note to stderr and exit 0.
 
 Identifiers are ULIDs: 26 characters, Crockford base32, time-sortable,
-case-insensitive on input.
+case-insensitive on input. Any command that takes a guess id accepts a unique
+prefix. Guesses recorded within the same millisecond share all but their last
+few characters, so a short prefix can be ambiguous; the error says so and
+exits with code 2.
 
 ## `guesses` (default)
 
@@ -66,3 +75,20 @@ reverse". The numeric score is available only in `--json`.
 | 4 | storage error |
 
 Diagnostics and errors go to stderr, prefixed `blinken:`.
+
+## Color and decoration
+
+Blinken emits no ANSI color or decorative glyphs on any output, so `NO_COLOR`
+and output redirection need no special handling. Should color ever be added,
+it must be off when `NO_COLOR` is set or stdout is not a terminal.
+
+## `sessions`
+
+One row per session, newest first:
+
+```
+01M26R9CQPYGQ58MBS5DQ8G2GG open   1 2026-09-10 18:51 codex
+```
+
+Columns: id, `open` or `ended`, guess count, local start time, agent name or
+`-`.

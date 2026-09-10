@@ -215,7 +215,7 @@
     </div>
   </header>
   <dl class="meta">
-    <div><dt>Status</dt><dd><span class="pill green">phase 0 complete</span> <span class="pill blue">phase 1 in progress</span></dd></div>
+    <div><dt>Status</dt><dd><span class="pill green">phase 0 complete</span> <span class="pill green">phase 1 implemented</span> <span class="pill amber">v0.1 acceptance pending</span></dd></div>
     <div><dt>Target</dt><dd>Initial open-source release, v0.1</dd></div>
     <div><dt>Updated</dt><dd>2026-09-10</dd></div>
     <div><dt>Language</dt><dd>Go, stable release</dd></div>
@@ -689,7 +689,8 @@ web/                <span class="c"># embedded browser assets and embed.go</span
       <section id="roadmap">
         <h2>Phased roadmap</h2>
         <div class="progress">
-          <p><strong>Progress as of 2026-09-10.</strong> Phase 0 shipped in commit <code>adff0df</code>: a working Kong CLI, ULID ids, modernc SQLite with WAL proven across processes, and a single binary serving the embedded review UI on loopback. Evidence and recommendations are in <code>docs/phase0-decisions.md</code>; the CLI vocabulary walkthroughs are in <code>docs/example-sessions.md</code>. Phase 1 is underway.</p>
+          <p><strong>Progress as of 2026-09-10.</strong> Phase 0 shipped in commit <code>adff0df</code>: a working Kong CLI, ULID ids, modernc SQLite with WAL proven across processes, and a single binary serving the embedded review UI on loopback. Evidence and recommendations are in <code>docs/phase0-decisions.md</code>; the CLI vocabulary walkthroughs are in <code>docs/example-sessions.md</code>.</p>
+          <p><strong>Phase 1</strong> landed in commit <code>69b5e9d</code> and covers every bullet below: shared filters, bulk actions with confirmation, optional TOML config, redaction before persistence, soft delete and explicit purge, session labels and listing, unique-prefix ids, the browser UI with project and session selection, filters, checkbox bulk actions, keyboard shortcuts, and CLI end-to-end tests for the output contract, project detection, session precedence, and the redaction boundary. The reference skill is <code>skills/blinken/SKILL.md</code>. Remaining before calling v0.1 done: the acceptance checklist below needs a pass by the owner, and <code>blinken --version</code> still reports <code>dev</code> until release tooling sets it.</p>
         </div>
         <div class="phases">
           <div class="phase done">
