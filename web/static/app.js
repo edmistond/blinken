@@ -163,7 +163,7 @@
   }
 
   document.addEventListener('keydown', (e) => {
-    if (e.target.matches('input, select, textarea')) {
+    if (e.target instanceof Element && e.target.matches('input, select, textarea')) {
       if (e.key === 'Escape') e.target.blur();
       return;
     }
@@ -171,7 +171,7 @@
     switch (e.key) {
       case 'j': case 'ArrowDown': move(1); e.preventDefault(); break;
       case 'k': case 'ArrowUp': move(-1); e.preventDefault(); break;
-      case 'Enter': if (g) toggleOpen(g.id); break;
+      case 'Enter': case 'Return': if (g) toggleOpen(g.id); break;
       case 'x': if (g) toggleSelect(g.id); break;
       case 'a': if (g) act(g.id, 'accepted', currentNote(g.id)); break;
       case 'r': if (g) act(g.id, 'rejected', currentNote(g.id)); break;
