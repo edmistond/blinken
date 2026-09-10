@@ -2,7 +2,10 @@
 @media (prefers-color-scheme: dark) { :root { --accent: #62c4bd; --amber: #e8a34f; --green: #6fcb93; --red: #f08a80; --blue: #86acf0; --focus: #62c4bd22; } }
 body { margin: 0; font: 15px/1.5 system-ui, sans-serif; max-width: 900px; padding: 20px 24px 40px; margin-inline: auto; }
 header { border-bottom: 2px solid currentColor; padding-bottom: 12px; margin-bottom: 14px; }
-.bar { display: flex; gap: 18px; align-items: baseline; flex-wrap: wrap; }
+.bar { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.bar h1 { margin-right: 6px; }
+.logo { width: 56px; height: 56px; mix-blend-mode: multiply; }
+@media (prefers-color-scheme: dark) { .logo { filter: invert(1); mix-blend-mode: screen; } }
 h1 { margin: 0; font-size: 22px; }
 label { font-size: 13px; opacity: .85; }
 select, input.note { font: inherit; font-size: 13px; padding: 3px 6px; border: 1px solid var(--rule); border-radius: 4px; background: transparent; color: inherit; }

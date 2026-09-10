@@ -40,7 +40,7 @@ func TestBindsLoopbackOnlyAndServesAssets(t *testing.T) {
 	if !strings.HasPrefix(s.URL(), "http://127.0.0.1:") {
 		t.Fatalf("bound to %s", s.URL())
 	}
-	for _, p := range []string{"/", "/static/app.js", "/static/style.css", "/api/review", "/api/projects", "/api/sessions"} {
+	for _, p := range []string{"/", "/static/app.js", "/static/style.css", "/static/logo.png", "/api/review", "/api/projects", "/api/sessions"} {
 		res, err := http.Get(s.URL() + p)
 		if err != nil || res.StatusCode != 200 {
 			t.Fatalf("GET %s: %v %v", p, res, err)

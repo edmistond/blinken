@@ -1,3 +1,5 @@
+<img src="blinken.png" alt="Blinken: a robot in a feathered cap and dark glasses" width="180" align="right">
+
 # Blinken
 
 Show me where the agent made the project up.
