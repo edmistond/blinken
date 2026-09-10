@@ -1,0 +1,20 @@
+:root { color-scheme: light dark; --rule: #8884; --accent: #0f6e6b; --amber: #a85e0b; --green: #2c7a4c; --red: #b3392f; --blue: #2f5ca8; }
+body { margin: 0; font: 15px/1.5 system-ui, sans-serif; max-width: 860px; padding: 24px; margin-inline: auto; }
+header { border-bottom: 2px solid currentColor; padding-bottom: 12px; margin-bottom: 20px; }
+h1 { margin: 0; font-size: 22px; }
+.muted { opacity: .65; font-size: 13px; }
+.counts { font-family: ui-monospace, monospace; font-size: 13px; margin-top: 6px; }
+.queue { list-style: none; padding: 0; margin: 0; }
+.queue li { border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; margin-bottom: 12px; }
+.queue li.done { opacity: .5; }
+.top { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.score { font-family: ui-monospace, monospace; font-size: 12px; opacity: .7; }
+.pill { font-family: ui-monospace, monospace; font-size: 11px; border: 1px solid currentColor; border-radius: 999px; padding: 0 7px; }
+.pill.unreviewed { color: var(--amber); } .pill.accepted { color: var(--green); } .pill.rejected { color: var(--red); } .pill.followup { color: var(--blue); }
+.summary { font-weight: 600; }
+dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 14px; margin: 8px 0; font-size: 14px; }
+dt { opacity: .6; } dd { margin: 0; }
+.actions { display: flex; gap: 8px; margin-top: 8px; align-items: center; flex-wrap: wrap; }
+button { font: inherit; font-size: 13px; padding: 4px 10px; border: 1px solid var(--rule); border-radius: 4px; background: transparent; color: inherit; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+input.note { font: inherit; font-size: 13px; padding: 4px 8px; border: 1px solid var(--rule); border-radius: 4px; background: transparent; color: inherit; flex: 1; min-width: 160px; }
