@@ -2,8 +2,10 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -138,5 +140,82 @@ func TestReviewStatusRoundTrip(t *testing.T) {
 	c, err := db.CountGuesses(ctx, pid)
 	if err != nil || c.Unreviewed != 0 {
 		t.Fatalf("counts = %+v, %v", c, err)
+	}
+}
+
+func TestFiltersBulkAndDeletion(t *testing.T) {
+	db, _ := openTemp(t)
+	ctx := context.Background()
+	pid, _ := db.ResolveProject(ctx, "/tmp/proj", ".git")
+	mk := func(kind, imp string) string {
+		g := &core.Guess{ProjectID: pid, Summary: "s " + kind, Kind: kind, Impact: imp}
+		if err := db.InsertGuess(ctx, g); err != nil {
+			t.Fatal(err)
+		}
+		time.Sleep(2 * time.Millisecond) // distinct ULID timestamps so prefixes differ
+		return g.ID
+	}
+	a := mk("assumption", "low")
+	b := mk("tradeoff", "high")
+	c := mk("", "critical")
+
+	if n, _ := db.CountWhere(ctx, Filter{ProjectID: pid, Impacts: []string{"high", "critical"}}); n != 2 {
+		t.Fatalf("impact filter count = %d", n)
+	}
+	if n, _ := db.CountWhere(ctx, Filter{ProjectID: pid, Kinds: []string{"tradeoff"}}); n != 1 {
+		t.Fatalf("kind filter count = %d", n)
+	}
+	n, err := db.BulkSetStatus(ctx, Filter{ProjectID: pid, Impacts: []string{"low"}}, core.StatusAccepted, "bulk")
+	if err != nil || n != 1 {
+		t.Fatalf("bulk = %d, %v", n, err)
+	}
+	if g, _ := db.GetGuess(ctx, a); g.Status != core.StatusAccepted || g.ReviewNote != "bulk" {
+		t.Fatalf("bulk did not apply: %+v", g)
+	}
+
+	// prefix resolution
+	if id, err := db.ResolveGuessID(ctx, strings.ToLower(b[:16])); err != nil || id != b {
+		t.Fatalf("prefix resolve = %q, %v", id, err)
+	}
+	if _, err := db.ResolveGuessID(ctx, b[:6]); !errors.Is(err, ErrAmbiguous) {
+		t.Fatalf("expected ambiguous, got %v", err)
+	}
+
+	// soft delete hides, purge removes
+	if err := db.SoftDelete(ctx, c); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.GetGuess(ctx, c); !errors.Is(err, ErrNotFound) {
+		t.Fatal("soft-deleted guess still visible")
+	}
+	if n, _ := db.CountWhere(ctx, Filter{ProjectID: pid}); n != 2 {
+		t.Fatalf("visible count after delete = %d", n)
+	}
+	if n, _ := db.CountWhere(ctx, Filter{ProjectID: pid, OnlyDeleted: true}); n != 1 {
+		t.Fatalf("deleted count = %d", n)
+	}
+	if n, _ := db.PurgeDeleted(ctx, Filter{ProjectID: pid, DeletedBefore: time.Now().Add(-time.Hour)}); n != 0 {
+		t.Fatalf("purge with old cutoff removed %d", n)
+	}
+	if n, _ := db.PurgeDeleted(ctx, Filter{ProjectID: pid}); n != 1 {
+		t.Fatalf("purge removed %d", n)
+	}
+	var files int
+	db.sql.QueryRowContext(ctx, `SELECT COUNT(*) FROM guess_files WHERE guess_id = ?`, c).Scan(&files)
+	if files != 0 {
+		t.Fatal("guess_files not cascaded")
+	}
+	// sessions with labels
+	sid, err := db.StartSession(ctx, Session{ProjectID: pid, Agent: "x", Labels: map[string]string{"ticket": "T-1"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ss, err := db.ListSessions(ctx, pid)
+	if err != nil || len(ss) != 1 || ss[0].ID != sid || ss[0].Labels["ticket"] != "T-1" {
+		t.Fatalf("sessions = %+v, %v", ss, err)
+	}
+	ps, err := db.ListProjects(ctx)
+	if err != nil || len(ps) != 1 || ps[0].Root != "/tmp/proj" || ps[0].Unresolved != 1 {
+		t.Fatalf("projects = %+v, %v", ps, err)
 	}
 }

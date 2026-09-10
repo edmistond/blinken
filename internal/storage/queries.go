@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -14,7 +15,10 @@ import (
 
 const timeLayout = time.RFC3339Nano
 
-var ErrNotFound = errors.New("not found")
+var (
+	ErrNotFound  = errors.New("not found")
+	ErrAmbiguous = errors.New("prefix matches more than one guess")
+)
 
 func fmtTime(t time.Time) string { return t.UTC().Format(timeLayout) }
 func parseTime(s string) time.Time {
@@ -47,13 +51,15 @@ func (db *DB) ResolveProject(ctx context.Context, root, marker string) (string, 
 
 // Session is a logical agent run.
 type Session struct {
-	ID        string
-	ProjectID string
-	StartedAt time.Time
-	EndedAt   *time.Time
-	Agent     string
-	Model     string
-	Cwd       string
+	ID        string            `json:"id"`
+	ProjectID string            `json:"project_id,omitempty"`
+	StartedAt time.Time         `json:"started_at"`
+	EndedAt   *time.Time        `json:"ended_at,omitempty"`
+	Agent     string            `json:"agent,omitempty"`
+	Model     string            `json:"model,omitempty"`
+	Cwd       string            `json:"cwd,omitempty"`
+	Labels    map[string]string `json:"labels,omitempty"`
+	Guesses   int               `json:"guesses"`
 }
 
 // StartSession inserts a session and returns its id.
@@ -64,9 +70,75 @@ func (db *DB) StartSession(ctx context.Context, s Session) (string, error) {
 	if s.ProjectID != "" {
 		pid = s.ProjectID
 	}
-	_, err := db.sql.ExecContext(ctx, `INSERT INTO sessions (id, project_id, started_at, agent, model, cwd) VALUES (?, ?, ?, ?, ?, ?)`,
-		s.ID, pid, fmtTime(s.StartedAt), s.Agent, s.Model, s.Cwd)
+	labels := "{}"
+	if len(s.Labels) > 0 {
+		b, err := json.Marshal(s.Labels)
+		if err != nil {
+			return "", err
+		}
+		labels = string(b)
+	}
+	_, err := db.sql.ExecContext(ctx, `INSERT INTO sessions (id, project_id, started_at, agent, model, cwd, labels_json) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		s.ID, pid, fmtTime(s.StartedAt), s.Agent, s.Model, s.Cwd, labels)
 	return s.ID, err
+}
+
+// ListSessions returns sessions for a project, newest first, with guess counts.
+func (db *DB) ListSessions(ctx context.Context, projectID string) ([]Session, error) {
+	rows, err := db.sql.QueryContext(ctx, `SELECT s.id, COALESCE(s.project_id,''), s.started_at, COALESCE(s.ended_at,''), s.agent, s.model, s.cwd, s.labels_json,
+		(SELECT COUNT(*) FROM guesses g WHERE g.session_id = s.id AND g.deleted_at IS NULL)
+		FROM sessions s WHERE (? = '' OR s.project_id = ?) ORDER BY s.started_at DESC, s.id DESC`, projectID, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Session
+	for rows.Next() {
+		var s Session
+		var started, ended, labels string
+		if err := rows.Scan(&s.ID, &s.ProjectID, &started, &ended, &s.Agent, &s.Model, &s.Cwd, &labels, &s.Guesses); err != nil {
+			return nil, err
+		}
+		s.StartedAt = parseTime(started)
+		if ended != "" {
+			t := parseTime(ended)
+			s.EndedAt = &t
+		}
+		if labels != "" && labels != "{}" {
+			_ = json.Unmarshal([]byte(labels), &s.Labels)
+		}
+		out = append(out, s)
+	}
+	return out, rows.Err()
+}
+
+// ProjectInfo describes a known project for selection lists.
+type ProjectInfo struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Root       string `json:"root"`
+	Unresolved int    `json:"unresolved"`
+}
+
+// ListProjects returns every project with its first observed root path.
+func (db *DB) ListProjects(ctx context.Context) ([]ProjectInfo, error) {
+	rows, err := db.sql.QueryContext(ctx, `SELECT p.id, p.name,
+		COALESCE((SELECT path FROM project_paths pp WHERE pp.project_id = p.id ORDER BY first_seen LIMIT 1), ''),
+		(SELECT COUNT(*) FROM guesses g WHERE g.project_id = p.id AND g.deleted_at IS NULL AND g.status IN ('unreviewed','followup'))
+		FROM projects p ORDER BY p.name, p.id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []ProjectInfo
+	for rows.Next() {
+		var p ProjectInfo
+		if err := rows.Scan(&p.ID, &p.Name, &p.Root, &p.Unresolved); err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
 }
 
 // EndSession marks a session ended. Ending twice is harmless.
@@ -112,13 +184,6 @@ func (db *DB) InsertGuess(ctx context.Context, g *core.Guess) error {
 	})
 }
 
-// Filter scopes list queries.
-type Filter struct {
-	ProjectID string
-	SessionID string
-	Statuses  []string
-}
-
 const guessCols = `id, project_id, COALESCE(session_id,''), created_at, updated_at, summary, ambiguity, chosen_behavior, kind,
 	confidence, impact, reversibility, reason, alternative, would_ask, cwd, cwd_rel, status, review_note, COALESCE(reviewed_at,'')`
 
@@ -138,25 +203,10 @@ func scanGuess(row interface{ Scan(...any) error }) (core.Guess, error) {
 	return g, nil
 }
 
-// ListGuesses returns non-deleted guesses matching the filter, unsorted.
+// ListGuesses returns guesses matching the filter, oldest first (callers sort).
 func (db *DB) ListGuesses(ctx context.Context, f Filter) ([]core.Guess, error) {
-	where := []string{"deleted_at IS NULL"}
-	var args []any
-	if f.ProjectID != "" {
-		where = append(where, "project_id = ?")
-		args = append(args, f.ProjectID)
-	}
-	if f.SessionID != "" {
-		where = append(where, "session_id = ?")
-		args = append(args, f.SessionID)
-	}
-	if len(f.Statuses) > 0 {
-		where = append(where, "status IN ("+strings.Repeat("?,", len(f.Statuses)-1)+"?)")
-		for _, s := range f.Statuses {
-			args = append(args, s)
-		}
-	}
-	rows, err := db.sql.QueryContext(ctx, `SELECT `+guessCols+` FROM guesses WHERE `+strings.Join(where, " AND ")+` ORDER BY created_at, id`, args...)
+	where, args := f.where()
+	rows, err := db.sql.QueryContext(ctx, `SELECT `+guessCols+` FROM guesses WHERE `+where+` ORDER BY created_at, id`, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -176,6 +226,43 @@ func (db *DB) ListGuesses(ctx context.Context, f Filter) ([]core.Guess, error) {
 		return nil, err
 	}
 	return out, nil
+}
+
+// CountWhere returns how many guesses match, for confirmation prompts.
+func (db *DB) CountWhere(ctx context.Context, f Filter) (int, error) {
+	where, args := f.where()
+	var n int
+	err := db.sql.QueryRowContext(ctx, `SELECT COUNT(*) FROM guesses WHERE `+where, args...).Scan(&n)
+	return n, err
+}
+
+// ResolveGuessID accepts a full id or a unique prefix (case-insensitive).
+func (db *DB) ResolveGuessID(ctx context.Context, prefix string) (string, error) {
+	prefix = strings.ToUpper(strings.TrimSpace(prefix))
+	if prefix == "" {
+		return "", fmt.Errorf("empty id: %w", ErrNotFound)
+	}
+	rows, err := db.sql.QueryContext(ctx, `SELECT id FROM guesses WHERE id >= ? AND id < ? LIMIT 2`, prefix, prefix+"~")
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return "", err
+		}
+		ids = append(ids, id)
+	}
+	switch len(ids) {
+	case 0:
+		return "", fmt.Errorf("guess %s: %w", prefix, ErrNotFound)
+	case 1:
+		return ids[0], nil
+	default:
+		return "", fmt.Errorf("guess %s: %w", prefix, ErrAmbiguous)
+	}
 }
 
 func (db *DB) attachFiles(ctx context.Context, gs []core.Guess) error {
@@ -271,4 +358,65 @@ func (n *nullInt) Scan(v any) error {
 		return fmt.Errorf("unexpected count type %T", v)
 	}
 	return nil
+}
+
+// BulkSetStatus applies one review state to every guess matching the filter
+// in a single transaction and returns how many changed.
+func (db *DB) BulkSetStatus(ctx context.Context, f Filter, status, note string) (int, error) {
+	g := core.Guess{Summary: "x", Status: status}
+	if err := g.Validate(); err != nil {
+		return 0, err
+	}
+	where, args := f.where()
+	ts := fmtTime(now())
+	var n int64
+	err := db.tx(ctx, func(tx *sql.Tx) error {
+		res, err := tx.ExecContext(ctx, `UPDATE guesses SET status = ?, review_note = ?, reviewed_at = ?, updated_at = ? WHERE `+where,
+			append([]any{status, note, ts, ts}, args...)...)
+		if err != nil {
+			return err
+		}
+		n, _ = res.RowsAffected()
+		return nil
+	})
+	return int(n), err
+}
+
+// SoftDelete hides one guess. Deleting twice is not an error.
+func (db *DB) SoftDelete(ctx context.Context, id string) error {
+	res, err := db.sql.ExecContext(ctx, `UPDATE guesses SET deleted_at = COALESCE(deleted_at, ?), updated_at = ? WHERE id = ?`, fmtTime(now()), fmtTime(now()), id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("guess %s: %w", id, ErrNotFound)
+	}
+	return nil
+}
+
+// SoftDeleteWhere hides every guess matching the filter.
+func (db *DB) SoftDeleteWhere(ctx context.Context, f Filter) (int, error) {
+	f.OnlyDeleted = false
+	where, args := f.where()
+	ts := fmtTime(now())
+	res, err := db.sql.ExecContext(ctx, `UPDATE guesses SET deleted_at = ?, updated_at = ? WHERE `+where, append([]any{ts, ts}, args...)...)
+	if err != nil {
+		return 0, err
+	}
+	n, _ := res.RowsAffected()
+	return int(n), nil
+}
+
+// PurgeDeleted permanently removes soft-deleted guesses (and their file
+// references, by cascade). SQLite does not shrink the file; free pages are
+// reused by later writes. Run VACUUM by hand to reclaim disk space.
+func (db *DB) PurgeDeleted(ctx context.Context, f Filter) (int, error) {
+	f.OnlyDeleted = true
+	where, args := f.where()
+	res, err := db.sql.ExecContext(ctx, `DELETE FROM guesses WHERE `+where, args...)
+	if err != nil {
+		return 0, err
+	}
+	n, _ := res.RowsAffected()
+	return int(n), nil
 }

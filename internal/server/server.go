@@ -30,18 +30,26 @@ type Project struct {
 	Root string `json:"root"`
 }
 
-// Server serves the embedded UI for one project.
+// Options tune the server.
+type Options struct {
+	Port            int
+	IncludeFollowup bool
+	Redactor        *core.Redactor // applied to review notes before persistence
+}
+
+// Server serves the embedded UI for one database.
 type Server struct {
 	db      *storage.DB
-	project Project
+	project Project // the project the command was launched in
+	opts    Options
 	token   string
 	index   []byte
 	http    *http.Server
 	ln      net.Listener
 }
 
-// New prepares a server bound to a random loopback port (or the given one).
-func New(db *storage.DB, project Project, port int) (*Server, error) {
+// New prepares a server bound to a random loopback port (or opts.Port).
+func New(db *storage.DB, project Project, opts Options) (*Server, error) {
 	raw, err := web.Index()
 	if err != nil {
 		return nil, err
@@ -50,10 +58,10 @@ func New(db *storage.DB, project Project, port int) (*Server, error) {
 	if _, err := rand.Read(tok); err != nil {
 		return nil, err
 	}
-	s := &Server{db: db, project: project, token: hex.EncodeToString(tok)}
+	s := &Server{db: db, project: project, opts: opts, token: hex.EncodeToString(tok)}
 	s.index = bytes.ReplaceAll(raw, []byte("{{TOKEN}}"), []byte(s.token))
 
-	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", opts.Port))
 	if err != nil {
 		return nil, err
 	}
@@ -62,8 +70,11 @@ func New(db *storage.DB, project Project, port int) (*Server, error) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.handleIndex)
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServerFS(mustSub(web.FS(), "static"))))
+	mux.HandleFunc("GET /api/projects", s.handleProjects)
+	mux.HandleFunc("GET /api/sessions", s.handleSessions)
 	mux.HandleFunc("GET /api/review", s.handleReview)
 	mux.HandleFunc("POST /api/guesses/{id}/status", s.handleStatus)
+	mux.HandleFunc("POST /api/guesses/bulk", s.handleBulk)
 
 	s.http = &http.Server{
 		Handler:           s.guard(mux),
@@ -85,6 +96,9 @@ func mustSub(f fs.FS, dir string) fs.FS {
 
 // URL is the exact bound address, printed to the terminal.
 func (s *Server) URL() string { return "http://" + s.ln.Addr().String() }
+
+// Token is the per-run CSRF token; exported for tests.
+func (s *Server) Token() string { return s.token }
 
 // Serve blocks until ctx is cancelled, then shuts down gracefully.
 func (s *Server) Serve(ctx context.Context) error {
@@ -125,6 +139,7 @@ func (s *Server) guard(next http.Handler) http.Handler {
 		}
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Content-Security-Policy", "default-src 'self'")
+		w.Header().Set("Referrer-Policy", "no-referrer")
 		next.ServeHTTP(w, r)
 	})
 }
@@ -135,16 +150,72 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	w.Write(s.index)
 }
 
+func (s *Server) handleProjects(w http.ResponseWriter, r *http.Request) {
+	ps, err := s.db.ListProjects(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, map[string]any{"current": s.project.ID, "projects": ps})
+}
+
+func (s *Server) handleSessions(w http.ResponseWriter, r *http.Request) {
+	pid := r.URL.Query().Get("project")
+	if pid == "" {
+		pid = s.project.ID
+	}
+	ss, err := s.db.ListSessions(r.Context(), pid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if ss == nil {
+		ss = []storage.Session{}
+	}
+	writeJSON(w, ss)
+}
+
 type reviewGuess struct {
 	core.Guess
 	Priority core.Priority `json:"priority"`
 }
 
+func csv(s string) []string {
+	if s == "" {
+		return nil
+	}
+	var out []string
+	for _, v := range strings.Split(s, ",") {
+		if v = strings.TrimSpace(v); v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
+}
+
 func (s *Server) handleReview(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	gs, err := s.db.ListGuesses(ctx, storage.Filter{ProjectID: s.project.ID, Statuses: []string{core.StatusUnreviewed, core.StatusFollowup}})
+	q := r.URL.Query()
+	f := storage.Filter{
+		ProjectID:   q.Get("project"),
+		SessionID:   q.Get("session"),
+		Statuses:    csv(q.Get("status")),
+		Kinds:       csv(q.Get("kind")),
+		Confidences: csv(q.Get("confidence")),
+		Impacts:     csv(q.Get("impact")),
+	}
+	if f.ProjectID == "" {
+		f.ProjectID = s.project.ID
+	}
+	if len(f.Statuses) == 0 {
+		f.Statuses = []string{core.StatusUnreviewed}
+		if s.opts.IncludeFollowup {
+			f.Statuses = append(f.Statuses, core.StatusFollowup)
+		}
+	}
+	gs, err := s.db.ListGuesses(ctx, f)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	core.SortByPriority(gs)
@@ -152,12 +223,30 @@ func (s *Server) handleReview(w http.ResponseWriter, r *http.Request) {
 	for i := range gs {
 		out[i] = reviewGuess{Guess: gs[i], Priority: core.PriorityOf(&gs[i])}
 	}
-	counts, err := s.db.CountGuesses(ctx, s.project.ID)
+	counts, err := s.db.CountGuesses(ctx, f.ProjectID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	writeJSON(w, map[string]any{"project": s.project, "counts": counts, "guesses": out})
+	proj := s.project
+	if f.ProjectID != s.project.ID {
+		proj = Project{ID: f.ProjectID}
+		if ps, err := s.db.ListProjects(ctx); err == nil {
+			for _, p := range ps {
+				if p.ID == f.ProjectID {
+					proj = Project{ID: p.ID, Name: p.Name, Root: p.Root}
+				}
+			}
+		}
+	}
+	writeJSON(w, map[string]any{"project": proj, "counts": counts, "guesses": out, "statuses": f.Statuses})
+}
+
+func (s *Server) note(n string) string {
+	if s.opts.Redactor == nil {
+		return n
+	}
+	return s.opts.Redactor.Text(n)
 }
 
 func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
@@ -170,7 +259,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := r.PathValue("id")
-	if err := s.db.SetStatus(r.Context(), id, body.Status, body.Note); err != nil {
+	if err := s.db.SetStatus(r.Context(), id, body.Status, s.note(body.Note)); err != nil {
 		code := http.StatusBadRequest
 		if errors.Is(err, storage.ErrNotFound) {
 			code = http.StatusNotFound
@@ -179,6 +268,30 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, map[string]string{"id": id, "status": body.Status})
+}
+
+// handleBulk applies one status to an explicit list of ids. The page shows
+// the count and asks the user before calling this.
+func (s *Server) handleBulk(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		IDs    []string `json:"ids"`
+		Status string   `json:"status"`
+		Note   string   `json:"note"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&body); err != nil {
+		http.Error(w, "bad json", http.StatusBadRequest)
+		return
+	}
+	if len(body.IDs) == 0 {
+		http.Error(w, "no ids", http.StatusBadRequest)
+		return
+	}
+	n, err := s.db.BulkSetStatus(r.Context(), storage.Filter{IDs: body.IDs}, body.Status, s.note(body.Note))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	writeJSON(w, map[string]any{"count": n, "status": body.Status})
 }
 
 func writeJSON(w http.ResponseWriter, v any) {

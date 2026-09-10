@@ -25,7 +25,7 @@ func setup(t *testing.T) (*Server, *storage.DB, string) {
 	if err := db.InsertGuess(ctx, g); err != nil {
 		t.Fatal(err)
 	}
-	s, err := New(db, Project{ID: pid, Name: "p", Root: "/tmp/p"}, 0)
+	s, err := New(db, Project{ID: pid, Name: "p", Root: "/tmp/p"}, Options{IncludeFollowup: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func TestBindsLoopbackOnlyAndServesAssets(t *testing.T) {
 	if !strings.HasPrefix(s.URL(), "http://127.0.0.1:") {
 		t.Fatalf("bound to %s", s.URL())
 	}
-	for _, p := range []string{"/", "/static/app.js", "/static/style.css", "/api/review"} {
+	for _, p := range []string{"/", "/static/app.js", "/static/style.css", "/api/review", "/api/projects", "/api/sessions"} {
 		res, err := http.Get(s.URL() + p)
 		if err != nil || res.StatusCode != 200 {
 			t.Fatalf("GET %s: %v %v", p, res, err)
@@ -49,7 +49,7 @@ func TestBindsLoopbackOnlyAndServesAssets(t *testing.T) {
 	}
 	res, _ := http.Get(s.URL() + "/")
 	body, _ := io.ReadAll(res.Body)
-	if !strings.Contains(string(body), s.token) || strings.Contains(string(body), "{{TOKEN}}") {
+	if !strings.Contains(string(body), s.Token()) || strings.Contains(string(body), "{{TOKEN}}") {
 		t.Fatal("token not injected into index")
 	}
 }
@@ -72,7 +72,7 @@ func TestRejectsForeignHostAndMissingToken(t *testing.T) {
 func TestStatusUpdateWithToken(t *testing.T) {
 	s, db, id := setup(t)
 	req, _ := http.NewRequest("POST", s.URL()+"/api/guesses/"+id+"/status", strings.NewReader(`{"status":"followup","note":"check"}`))
-	req.Header.Set("X-Blinken-Token", s.token)
+	req.Header.Set("X-Blinken-Token", s.Token())
 	res, err := http.DefaultClient.Do(req)
 	if err != nil || res.StatusCode != 200 {
 		t.Fatalf("status update: %v %v", res, err)
@@ -80,5 +80,34 @@ func TestStatusUpdateWithToken(t *testing.T) {
 	g, _ := db.GetGuess(context.Background(), id)
 	if g.Status != "followup" || g.ReviewNote != "check" {
 		t.Fatalf("db not updated: %+v", g)
+	}
+}
+
+func TestBulkStatusAndFilters(t *testing.T) {
+	s, db, id := setup(t)
+	ctx := context.Background()
+	pid, _ := db.ResolveProject(ctx, "/tmp/p", ".git")
+	g2 := &core.Guess{ProjectID: pid, Summary: "second", Kind: "tradeoff"}
+	db.InsertGuess(ctx, g2)
+
+	res, _ := http.Get(s.URL() + "/api/review?kind=tradeoff")
+	body, _ := io.ReadAll(res.Body)
+	if strings.Contains(string(body), "escaped?") || !strings.Contains(string(body), "second") {
+		t.Fatalf("kind filter not applied: %s", body)
+	}
+
+	req, _ := http.NewRequest("POST", s.URL()+"/api/guesses/bulk", strings.NewReader(`{"ids":["`+id+`","`+g2.ID+`"],"status":"accepted","note":"batch"}`))
+	req.Header.Set("X-Blinken-Token", s.Token())
+	res, err := http.DefaultClient.Do(req)
+	if err != nil || res.StatusCode != 200 {
+		t.Fatalf("bulk: %v %v", res, err)
+	}
+	body, _ = io.ReadAll(res.Body)
+	if !strings.Contains(string(body), `"count":2`) {
+		t.Fatalf("bulk count: %s", body)
+	}
+	g, _ := db.GetGuess(ctx, g2.ID)
+	if g.Status != "accepted" || g.ReviewNote != "batch" {
+		t.Fatalf("bulk not applied: %+v", g)
 	}
 }

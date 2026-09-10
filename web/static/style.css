@@ -1,20 +1,36 @@
-:root { color-scheme: light dark; --rule: #8884; --accent: #0f6e6b; --amber: #a85e0b; --green: #2c7a4c; --red: #b3392f; --blue: #2f5ca8; }
-body { margin: 0; font: 15px/1.5 system-ui, sans-serif; max-width: 860px; padding: 24px; margin-inline: auto; }
-header { border-bottom: 2px solid currentColor; padding-bottom: 12px; margin-bottom: 20px; }
+:root { color-scheme: light dark; --rule: #8884; --rule-soft: #8882; --accent: #0f6e6b; --amber: #a85e0b; --green: #2c7a4c; --red: #b3392f; --blue: #2f5ca8; --focus: #0f6e6b22; }
+@media (prefers-color-scheme: dark) { :root { --accent: #62c4bd; --amber: #e8a34f; --green: #6fcb93; --red: #f08a80; --blue: #86acf0; --focus: #62c4bd22; } }
+body { margin: 0; font: 15px/1.5 system-ui, sans-serif; max-width: 900px; padding: 20px 24px 40px; margin-inline: auto; }
+header { border-bottom: 2px solid currentColor; padding-bottom: 12px; margin-bottom: 14px; }
+.bar { display: flex; gap: 18px; align-items: baseline; flex-wrap: wrap; }
 h1 { margin: 0; font-size: 22px; }
+label { font-size: 13px; opacity: .85; }
+select, input.note { font: inherit; font-size: 13px; padding: 3px 6px; border: 1px solid var(--rule); border-radius: 4px; background: transparent; color: inherit; }
 .muted { opacity: .65; font-size: 13px; }
 .counts { font-family: ui-monospace, monospace; font-size: 13px; margin-top: 6px; }
+.filters { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; font-size: 13px; align-items: center; }
+.filters .group { display: flex; gap: 10px; }
+.filters .group label { display: inline-flex; gap: 4px; align-items: center; }
+.bulk { position: sticky; top: 0; z-index: 2; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 12px; margin-bottom: 12px; border: 1px solid var(--accent); border-radius: 6px; background: Canvas; font-size: 13px; }
+.bulk input.note { flex: 1; min-width: 160px; }
 .queue { list-style: none; padding: 0; margin: 0; }
-.queue li { border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; margin-bottom: 12px; }
-.queue li.done { opacity: .5; }
-.top { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
-.score { font-family: ui-monospace, monospace; font-size: 12px; opacity: .7; }
-.pill { font-family: ui-monospace, monospace; font-size: 11px; border: 1px solid currentColor; border-radius: 999px; padding: 0 7px; }
+.queue li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; border: 1px solid var(--rule); border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; outline: none; }
+.queue li.focus { border-color: var(--accent); background: var(--focus); }
+.queue li.selected { border-left: 4px solid var(--accent); padding-left: 11px; }
+.queue li input[type=checkbox] { margin-top: 5px; }
+.top { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; cursor: pointer; }
+.score { font-family: ui-monospace, monospace; font-size: 12px; opacity: .7; margin-left: auto; }
+.pill { font-family: ui-monospace, monospace; font-size: 11px; border: 1px solid currentColor; border-radius: 999px; padding: 0 7px; white-space: nowrap; }
 .pill.unreviewed { color: var(--amber); } .pill.accepted { color: var(--green); } .pill.rejected { color: var(--red); } .pill.followup { color: var(--blue); }
 .summary { font-weight: 600; }
+.details { display: none; }
+li.open .details { display: block; }
 dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 14px; margin: 8px 0; font-size: 14px; }
-dt { opacity: .6; } dd { margin: 0; }
+dt { opacity: .6; } dd { margin: 0; white-space: pre-wrap; }
 .actions { display: flex; gap: 8px; margin-top: 8px; align-items: center; flex-wrap: wrap; }
 button { font: inherit; font-size: 13px; padding: 4px 10px; border: 1px solid var(--rule); border-radius: 4px; background: transparent; color: inherit; cursor: pointer; }
-button:hover { border-color: var(--accent); }
-input.note { font: inherit; font-size: 13px; padding: 4px 8px; border: 1px solid var(--rule); border-radius: 4px; background: transparent; color: inherit; flex: 1; min-width: 160px; }
+button:hover, button:focus-visible { border-color: var(--accent); outline: none; }
+button.quiet { opacity: .7; }
+.actions input.note { flex: 1; min-width: 160px; }
+footer { margin-top: 24px; padding-top: 10px; border-top: 1px solid var(--rule-soft); }
+kbd { font-family: ui-monospace, monospace; font-size: 11.5px; border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 3px; padding: 0 5px; }

@@ -9,14 +9,40 @@
 </head>
 <body>
 <header>
-  <h1>Blinken</h1>
-  <div id="project" class="muted"></div>
+  <div class="bar">
+    <h1>Blinken</h1>
+    <label>Project <select id="project"></select></label>
+    <label>Session <select id="session"><option value="">all</option></select></label>
+  </div>
+  <div id="root" class="muted"></div>
   <div id="counts" class="counts"></div>
+  <div class="filters">
+    <span class="group" id="status-filter">
+      <label><input type="checkbox" value="unreviewed" checked> unreviewed</label>
+      <label><input type="checkbox" value="followup" checked> followup</label>
+      <label><input type="checkbox" value="accepted"> accepted</label>
+      <label><input type="checkbox" value="rejected"> rejected</label>
+    </span>
+    <label>Kind <select id="kind"><option value="">any</option><option>assumption</option><option>interpretation</option><option>tradeoff</option><option>deviation</option><option>inference</option></select></label>
+    <label>Confidence <select id="confidence"><option value="">any</option><option>low</option><option>medium</option><option>high</option></select></label>
+    <label>Impact <select id="impact"><option value="">any</option><option>low</option><option>medium</option><option>high</option><option>critical</option></select></label>
+  </div>
 </header>
+<div id="bulk" class="bulk" hidden>
+  <span id="bulk-count"></span>
+  <button data-status="accepted">accept</button>
+  <button data-status="rejected">reject</button>
+  <button data-status="followup">follow up</button>
+  <input id="bulk-note" class="note" placeholder="optional note for all selected">
+  <button id="bulk-clear" class="quiet">clear</button>
+</div>
 <main>
   <ol id="queue" class="queue"></ol>
-  <p id="empty" class="muted" hidden>Nothing to review.</p>
+  <p id="empty" class="muted" hidden>Nothing matches these filters.</p>
 </main>
+<footer class="muted">
+  <kbd>j</kbd>/<kbd>k</kbd> next/previous &nbsp; <kbd>a</kbd> accept &nbsp; <kbd>r</kbd> reject &nbsp; <kbd>f</kbd> follow up &nbsp; <kbd>x</kbd> select &nbsp; <kbd>enter</kbd> expand &nbsp; <kbd>n</kbd> note
+</footer>
 <script src="/static/app.js"></script>
 </body>
 </html>
