@@ -1,0 +1,848 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blinken Engineering Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@88,500;88,700;88,800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --paper: #F4F5F1;
+    --surface: #FFFFFF;
+    --ink: #191C1A;
+    --ink-2: #3E443F;
+    --muted: #5F665F;
+    --rule: #D5D9D2;
+    --rule-soft: #E6E9E3;
+    --accent: #0F6E6B;
+    --accent-ink: #0A5654;
+    --accent-soft: #DFEEEB;
+    --code-bg: #EDEFEA;
+    --amber: #A85E0B; --amber-bg: #F7EBDA;
+    --green: #2C7A4C; --green-bg: #DFF0E5;
+    --red: #B3392F;   --red-bg: #F8E3E0;
+    --blue: #2F5CA8;  --blue-bg: #E0E9F7;
+    --logo-blend: multiply;
+    --logo-filter: none;
+    --shadow: 0 1px 0 rgba(25,28,26,.04), 0 6px 20px -12px rgba(25,28,26,.18);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #141715; --surface: #1C201D; --ink: #E8EBE6; --ink-2: #C3C9C2; --muted: #98A199;
+      --rule: #2E332F; --rule-soft: #252A26; --accent: #62C4BD; --accent-ink: #8AD9D2; --accent-soft: #16302E;
+      --code-bg: #101311;
+      --amber: #E8A34F; --amber-bg: #3A2A12; --green: #6FCB93; --green-bg: #15301F;
+      --red: #F08A80; --red-bg: #3D1B18; --blue: #86ACF0; --blue-bg: #17284A;
+      --logo-blend: screen; --logo-filter: invert(1);
+      --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #141715; --surface: #1C201D; --ink: #E8EBE6; --ink-2: #C3C9C2; --muted: #98A199;
+    --rule: #2E332F; --rule-soft: #252A26; --accent: #62C4BD; --accent-ink: #8AD9D2; --accent-soft: #16302E;
+    --code-bg: #101311;
+    --amber: #E8A34F; --amber-bg: #3A2A12; --green: #6FCB93; --green-bg: #15301F;
+    --red: #F08A80; --red-bg: #3D1B18; --blue: #86ACF0; --blue-bg: #17284A;
+    --logo-blend: screen; --logo-filter: invert(1);
+    --shadow: none;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  code, pre, kbd, .mono { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+  code { font-size: .88em; background: var(--code-bg); padding: .1em .35em; border-radius: 3px; }
+  pre { background: var(--code-bg); border: 1px solid var(--rule-soft); border-radius: 6px; padding: 14px 16px; overflow-x: auto; font-size: 13.5px; line-height: 1.55; margin: 0; }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  pre .c { color: var(--muted); }
+  pre .o { color: var(--accent-ink); }
+
+  h1, h2, h3 { font-family: "Archivo", "Helvetica Neue", Arial, sans-serif; font-stretch: 88%; text-wrap: balance; margin: 0; letter-spacing: -.01em; }
+  h1 { font-size: clamp(40px, 6vw, 64px); font-weight: 800; line-height: .95; letter-spacing: -.025em; }
+  h2 { font-size: 26px; font-weight: 700; line-height: 1.15; }
+  h3 { font-size: 17px; font-weight: 700; line-height: 1.3; margin-top: 28px; }
+  h3 + p, h3 + ul, h3 + pre, h3 + table { margin-top: 8px; }
+  p { margin: 0 0 14px; max-width: 68ch; }
+  ul, ol { margin: 0 0 14px; padding-left: 22px; max-width: 68ch; }
+  li { margin: 3px 0; }
+  li::marker { color: var(--muted); }
+  strong { font-weight: 600; }
+
+  .eyebrow { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+  /* Layout */
+  .page { max-width: 1160px; margin: 0 auto; padding: 32px 24px 96px; }
+  .layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 56px; align-items: start; }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; gap: 24px; } .toc { position: static !important; } }
+  .content { min-width: 0; }
+
+  /* Header */
+  .masthead { display: grid; grid-template-columns: 168px minmax(0,1fr); gap: 28px; align-items: end; padding-bottom: 28px; border-bottom: 2px solid var(--ink); margin-bottom: 20px; }
+  @media (max-width: 600px) { .masthead { grid-template-columns: 120px 1fr; gap: 16px; } }
+  .logo { display: block; width: 100%; height: auto; mix-blend-mode: var(--logo-blend); filter: var(--logo-filter); }
+  .tagline { font-family: "Archivo", sans-serif; font-stretch: 88%; font-weight: 500; font-size: 20px; color: var(--ink-2); margin: 10px 0 0; max-width: 34ch; line-height: 1.3; }
+  .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 24px; padding: 14px 0 0; margin-bottom: 40px; border-bottom: 1px solid var(--rule); padding-bottom: 18px; }
+  .meta div { display: flex; flex-direction: column; gap: 2px; }
+  .meta dt { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .meta dd { margin: 0; font-weight: 500; font-size: 15px; }
+  .pill { display: inline-block; font-family: "IBM Plex Mono", monospace; font-size: 12px; padding: 1px 8px; border-radius: 999px; border: 1px solid currentColor; line-height: 1.6; }
+  .pill.amber { color: var(--amber); background: var(--amber-bg); }
+  .pill.green { color: var(--green); background: var(--green-bg); }
+  .pill.red { color: var(--red); background: var(--red-bg); }
+  .pill.blue { color: var(--blue); background: var(--blue-bg); }
+  .pill.grey { color: var(--muted); background: var(--code-bg); }
+
+  /* TOC */
+  .toc { position: sticky; top: 24px; }
+  .toc ol { list-style: none; padding: 0; margin: 8px 0 0; border-left: 1px solid var(--rule); }
+  .toc li { margin: 0; }
+  .toc a { display: block; padding: 4px 0 4px 14px; font-size: 13px; color: var(--ink-2); text-decoration: none; border-left: 2px solid transparent; margin-left: -1px; line-height: 1.35; }
+  .toc a:hover { color: var(--ink); border-left-color: var(--rule); }
+  .toc a.active { color: var(--accent-ink); border-left-color: var(--accent); font-weight: 500; }
+
+  /* Sections */
+  section { padding: 36px 0; border-top: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:first-of-type { border-top: 0; padding-top: 0; }
+  section > h2 { margin-bottom: 14px; }
+  .lede { font-size: 18px; color: var(--ink-2); max-width: 60ch; }
+
+  /* Loop diagram */
+  .loop { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin: 22px 0 8px; counter-reset: step; }
+  .loop div { position: relative; padding: 14px 14px 14px 16px; border: 1px solid var(--rule); background: var(--surface); font-size: 14px; line-height: 1.4; box-shadow: var(--shadow); }
+  .loop div + div { border-left: 0; }
+  .loop div:first-child { border-radius: 6px 0 0 6px; }
+  .loop div:last-child { border-radius: 0 6px 6px 0; }
+  .loop div::before { counter-increment: step; content: counter(step); display: block; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--accent-ink); margin-bottom: 6px; letter-spacing: .1em; }
+  .loop div:not(:last-child)::after { content: ""; position: absolute; right: -7px; top: 50%; width: 12px; height: 12px; background: var(--surface); border-top: 1px solid var(--rule); border-right: 1px solid var(--rule); transform: translateY(-50%) rotate(45deg); z-index: 1; }
+  .loop .who { color: var(--muted); font-size: 12px; display: block; margin-top: 4px; }
+  @media (max-width: 700px) { .loop { grid-template-columns: 1fr; } .loop div + div { border-left: 1px solid var(--rule); border-top: 0; } .loop div:first-child { border-radius: 6px 6px 0 0; } .loop div:last-child { border-radius: 0 0 6px 6px; } .loop div:not(:last-child)::after { right: auto; left: 20px; top: auto; bottom: -7px; transform: rotate(135deg); } }
+
+  /* Two-col lists */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 32px; }
+  @media (max-width: 700px) { .cols { grid-template-columns: 1fr; } }
+  .cols h3 { margin-top: 0; }
+  .cols ul { font-size: 15px; }
+
+  /* Tables */
+  .tablewrap { overflow-x: auto; margin: 10px 0 18px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  th { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 500; background: var(--code-bg); }
+  tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .req { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+
+  /* Definition list */
+  .terms { display: grid; grid-template-columns: max-content 1fr; gap: 10px 24px; margin: 0; max-width: 72ch; }
+  .terms dt { font-weight: 600; }
+  .terms dd { margin: 0; color: var(--ink-2); }
+  .terms .pill { margin-right: 4px; }
+  @media (max-width: 520px) { .terms { grid-template-columns: 1fr; gap: 2px 0; } .terms dd { margin-bottom: 10px; } }
+
+  /* Principles */
+  .principles { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px 28px; }
+  .principles h3 { margin-top: 0; font-size: 15.5px; }
+  .principles p { font-size: 14.5px; color: var(--ink-2); margin: 4px 0 0; }
+
+  /* Workflow steps */
+  .flow { display: grid; gap: 22px; }
+  .flow .step { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .flow .step p { margin: 0; font-size: 15px; }
+  .flow .step .out { font-size: 12.5px; color: var(--muted); font-family: "IBM Plex Mono", monospace; margin-top: 6px; }
+
+  /* Calculator */
+  .calc { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 18px 20px; margin: 18px 0; box-shadow: var(--shadow); }
+  .calc .row { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; margin-bottom: 14px; }
+  @media (max-width: 560px) { .calc .row { grid-template-columns: 1fr; } }
+  .calc label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); font-family: "IBM Plex Mono", monospace; letter-spacing: .08em; text-transform: uppercase; }
+  .calc select { font: 500 14px "IBM Plex Sans", sans-serif; padding: 7px 10px; border: 1px solid var(--rule); border-radius: 5px; background: var(--paper); color: var(--ink); }
+  .calc .result { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; border-top: 1px solid var(--rule-soft); padding-top: 12px; }
+  .calc .score { font-family: "Archivo", sans-serif; font-stretch: 88%; font-weight: 800; font-size: 40px; line-height: 1; font-variant-numeric: tabular-nums; min-width: 2ch; }
+  .calc .formula { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--muted); }
+  .calc .reason { font-size: 15px; font-weight: 500; }
+  .calc .note { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; }
+
+  /* Roadmap */
+  .phases { display: grid; gap: 0; border-left: 2px solid var(--rule); margin: 8px 0 0; }
+  .phase { position: relative; padding: 4px 0 26px 26px; }
+  .phase::before { content: ""; position: absolute; left: -7px; top: 10px; width: 12px; height: 12px; border-radius: 50%; background: var(--paper); border: 2px solid var(--muted); }
+  .phase.now::before { background: var(--accent); border-color: var(--accent); }
+  .phase .eyebrow { margin-bottom: 2px; }
+  .phase h3 { margin-top: 0; }
+  .phase ul { margin: 8px 0 0; font-size: 14.5px; }
+
+  /* Checklist */
+  .criteria { list-style: none; padding: 0; counter-reset: c; max-width: 72ch; }
+  .criteria li { display: grid; grid-template-columns: 30px 1fr; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--rule-soft); margin: 0; }
+  .criteria li::before { counter-increment: c; content: counter(c, decimal-leading-zero); font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--accent-ink); padding-top: 3px; }
+
+  /* Questions */
+  .questions { padding-left: 0; list-style: none; counter-reset: q; max-width: 72ch; }
+  .questions li { position: relative; padding-left: 36px; margin: 8px 0; }
+  .questions li::before { counter-increment: q; content: "Q" counter(q); position: absolute; left: 0; top: 2px; font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--muted); letter-spacing: .05em; }
+
+  blockquote { margin: 18px 0; padding: 10px 18px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; max-width: 68ch; font-family: "Archivo", sans-serif; font-stretch: 88%; font-weight: 500; font-size: 19px; line-height: 1.35; }
+  .keys { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 8px 0 14px; max-width: 40ch; font-size: 14px; }
+  kbd { font-size: 12.5px; background: var(--surface); border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; padding: 1px 7px; }
+  .footer { margin-top: 48px; padding-top: 18px; border-top: 2px solid var(--ink); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header class="masthead">
+    <img class="logo" src="data:image/jpeg;base64,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" alt="Blinken logo: a smiling robot wearing a feathered cap and round dark glasses" width="420" height="420">
+    <div>
+      <div class="eyebrow">Initial engineering specification</div>
+      <h1>Blinken</h1>
+      <p class="tagline">Show me where the agent made the project up.</p>
+    </div>
+  </header>
+  <dl class="meta">
+    <div><dt>Status</dt><dd><span class="pill amber">draft for interrogation</span></dd></div>
+    <div><dt>Target</dt><dd>Initial open-source release, v0.1</dd></div>
+    <div><dt>Language</dt><dd>Go, stable release</dd></div>
+    <div><dt>Storage</dt><dd>SQLite, user-level, WAL</dd></div>
+    <div><dt>License</dt><dd>MIT</dd></div>
+    <div><dt>Network</dt><dd>None. No telemetry, no accounts.</dd></div>
+  </dl>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Sections">
+      <div class="eyebrow">Contents</div>
+      <ol>
+        <li><a href="#summary">Summary</a></li>
+        <li><a href="#problem">Problem</a></li>
+        <li><a href="#goals">Goals and non-goals</a></li>
+        <li><a href="#principles">Design principles</a></li>
+        <li><a href="#terms">Terminology</a></li>
+        <li><a href="#workflows">Primary workflows</a></li>
+        <li><a href="#cli">CLI surface</a></li>
+        <li><a href="#model">Guess model</a></li>
+        <li><a href="#priority">Review priority</a></li>
+        <li><a href="#projects">Projects and sessions</a></li>
+        <li><a href="#storage">Storage</a></li>
+        <li><a href="#browser">Browser review</a></li>
+        <li><a href="#privacy">Privacy and deletion</a></li>
+        <li><a href="#config">Configuration</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#similarity">Similarity, later</a></li>
+        <li><a href="#testing">Testing</a></li>
+        <li><a href="#acceptance">Acceptance criteria</a></li>
+        <li><a href="#roadmap">Roadmap</a></li>
+        <li><a href="#decisions">Decisions and questions</a></li>
+        <li><a href="#skill">Guidance for agents</a></li>
+        <li><a href="#constraint">Final constraint</a></li>
+      </ol>
+    </nav>
+
+    <main class="content">
+
+      <section id="summary">
+        <h2>Summary</h2>
+        <p class="lede">Blinken is a local-first command-line tool that lets coding agents record the consequential places where they had to guess, because the spec, docs, tests, or existing code did not clearly determine an answer.</p>
+        <p>It is not a transcript. A long autonomous run produces tens of thousands of lines of activity but only a few dozen decisions that materially determine whether the result is right. Blinken captures those decisions when they happen, ranks them for human review, and makes it comfortable to accept them, reject them, or mark them for follow-up. Think of it as observability for agent judgment.</p>
+        <p>The user-facing noun is <strong>guess</strong>. Internally the code may use neutral names such as <code>GuessRecord</code> where that reads better.</p>
+        <div class="loop">
+          <div>Agent hits a consequential ambiguity<span class="who">during the run</span></div>
+          <div>Agent records one cheap guess<span class="who">one short command</span></div>
+          <div>Human sees the important guesses first<span class="who">terminal or browser</span></div>
+          <div>Human accepts, rejects, or follows up<span class="who">state persists</span></div>
+        </div>
+        <p style="font-size:13.5px;color:var(--muted);margin-top:10px">The one loop v0.1 must make excellent. Everything else is optional until it proves useful.</p>
+      </section>
+
+      <section id="problem">
+        <h2>Problem statement</h2>
+        <p>Code review becomes less sufficient as agents work for longer stretches. An implementation can be locally coherent and mechanically correct while resting on an early, consequential interpretation the user never intended.</p>
+        <p>Agents are also poor witnesses to their own earlier reasoning. Asking for a reconstructed ledger at the end of a run yields an incomplete or overly tidy account. Recording a guess therefore has to be cheap enough to do at the moment the ambiguity is met.</p>
+        <p>A record is worth keeping when all three hold:</p>
+        <ul>
+          <li>The agent had to choose among materially different behaviors or approaches.</li>
+          <li>The available spec, docs, tests, code, or conventions did not clearly determine the answer.</li>
+          <li>The choice could matter to the user, product, system, data, security, maintainability, or externally visible behavior.</li>
+        </ul>
+        <p>Routine implementation details do not belong in Blinken.</p>
+      </section>
+
+      <section id="goals">
+        <h2>Goals and non-goals</h2>
+        <div class="cols">
+          <div>
+            <h3>Blinken should</h3>
+            <ul>
+              <li>Record consequential guesses with very little invocation and output overhead.</li>
+              <li>Work without a hosted service, account, API key, or network.</li>
+              <li>Store records durably in a user-level SQLite database shared by local agent sessions.</li>
+              <li>Detect the current project and capture the working directory at record time.</li>
+              <li>Associate guesses with logical agent sessions when possible.</li>
+              <li>Rank unresolved guesses by review value: confidence, impact, reversibility.</li>
+              <li>Offer a compact CLI workflow and a comfortable local browser workflow.</li>
+              <li>Let a human accept, reject, or flag guesses, with optional notes.</li>
+              <li>Preserve enough context to understand a guess without becoming a transcript.</li>
+              <li>Play well with RTK and other token-saving wrappers via small, deterministic output.</li>
+              <li>Leave room for optional local semantic similarity with no LLM calls.</li>
+              <li>Stay useful at MVP scale with no embeddings, clustering, daemon, or cloud.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Blinken is not</h3>
+            <ul>
+              <li>An agent orchestrator.</li>
+              <li>A transcript, tool-call, or command-output recorder.</li>
+              <li>A logging or telemetry platform.</li>
+              <li>A source-code review system or task tracker.</li>
+              <li>A replacement for docs, tests, specs, or ADRs.</li>
+              <li>Something that edits source code after a rejection.</li>
+              <li>A cloud sync service.</li>
+              <li>An LLM-based summarizer or classifier.</li>
+              <li>A vector database.</li>
+              <li>An editor plugin, MCP server, hosted dashboard, or always-on daemon.</li>
+            </ul>
+            <p style="font-size:14px;color:var(--muted)">Any of these may be explored later only if real usage demonstrates a need.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="principles">
+        <h2>Design principles</h2>
+        <div class="principles">
+          <div><h3>Local first</h3><p>Recording, storage, querying, ranking, and review all work offline. No record leaves the machine in normal operation.</p></div>
+          <div><h3>Cheap at the moment of uncertainty</h3><p>The write path is a single short command. Optional metadata improves a record but never makes recording burdensome.</p></div>
+          <div><h3>Human judgment stays authoritative</h3><p>Scores and similarity matches are review aids. Blinken never silently decides two guesses are the same, nor treats a model's confidence as calibrated truth.</p></div>
+          <div><h3>Agent output and human output differ</h3><p>Agent-facing commands default to compact, deterministic text. Human review may be verbose and prefers legibility over token economy.</p></div>
+          <div><h3>Boring, replaceable internals</h3><p>Ordinary Go and SQLite patterns. Abstraction only around what is likely to change, chiefly local embedding generation. No ceremonial clean architecture.</p></div>
+        </div>
+      </section>
+
+      <section id="terms">
+        <h2>Terminology</h2>
+        <dl class="terms">
+          <dt>Guess</dt><dd>An exact record of a consequential choice made under ambiguity. Every guess has its own immutable identifier, even if later grouped.</dd>
+          <dt>Kind</dt><dd>Optional metadata, not a competing top-level concept. <span class="pill grey">assumption</span> <span class="pill grey">interpretation</span> <span class="pill grey">tradeoff</span> <span class="pill grey">deviation</span> <span class="pill grey">inference</span></dd>
+          <dt>Session</dt><dd>One logical coding-agent run. Provides grouping and provenance but is never required to record a guess.</dd>
+          <dt>Project</dt><dd>The local repository or project a guess belongs to. Used for review scope, filtering, and later similarity comparison.</dd>
+          <dt>Subject</dt><dd>A human-confirmed grouping of guesses about the same underlying ambiguity. Gets a durable identifier only after explicit grouping.</dd>
+          <dt>Review status</dt><dd><span class="pill amber">unreviewed</span> <span class="pill green">accepted</span> <span class="pill red">rejected</span> <span class="pill blue">followup</span> &nbsp;<span style="color:var(--muted);font-size:14px">superseded may come later.</span></dd>
+        </dl>
+      </section>
+
+      <section id="workflows">
+        <h2>Primary workflows</h2>
+        <div class="flow">
+          <div class="step">
+            <p><strong>Start a session.</strong> Optional. The returned identifier can be exported so later commands pick it up. An explicit <code>--session</code> wins over the environment variable. No process-tree heuristics.</p>
+<pre><code>blinken session start --agent codex --model gpt-5.6
+<span class="c">01K...</span>
+export BLINKEN_SESSION=01K...</code></pre>
+          </div>
+          <div class="step">
+            <p><strong>Record a guess.</strong> The positional argument is the summary. Project root, cwd, time, and session are inferred. Source files are never inspected.</p>
+<pre><code>blinken guess "Suspended users retain read-only access"
+<span class="c">01K...</span>
+
+<span class="c"># rich form</span>
+blinken guess \
+  --kind inference --confidence medium --impact high --reversibility hard \
+  --summary "Suspended users may download existing files" \
+  --ambiguity "The spec defines write restrictions but not read access" \
+  --reason "Neighboring handlers treat suspension as write-disabled" \
+  --alternative "Block all file access" \
+  --would-ask "Should suspension make existing files inaccessible?" \
+  --file src/Files/DownloadHandler.cs:118</code></pre>
+          </div>
+          <div class="step">
+            <p><strong>Inspect compactly.</strong> The default is one summary line. Compact rows expose individual records with documented, stable abbreviations. JSON is available but usually costs more tokens.</p>
+<pre><code>blinken guesses
+<span class="c">8 unreviewed | 2 high-impact | 3 low-confidence</span>
+
+blinken guesses --compact
+<span class="c">01K... H/L assumption Suspended accounts retain downloads
+01K... M/M inference  Failed payments retry once</span></code></pre>
+          </div>
+          <div class="step">
+            <p><strong>Review.</strong> Defaults to the current project, unreviewed and followup guesses, highest priority first, with the ordering factors shown rather than an opaque score. The browser variant serves an ephemeral loopback server on a random port and opens the browser unless told not to. No daemon.</p>
+<pre><code>blinken review
+blinken review --serve --no-open
+<span class="c">http://127.0.0.1:43817</span></code></pre>
+          </div>
+          <div class="step">
+            <p><strong>Resolve.</strong> These commands update review state only. Bulk actions report the count and require confirmation unless <code>--yes</code> is given.</p>
+<pre><code>blinken accept 01K...
+blinken reject 01K... --note "Suspended accounts must have no file access."
+blinken followup 01K... --note "Confirm with product before release."
+blinken accept --all --status unreviewed --impact low</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="cli">
+        <h2>CLI surface</h2>
+        <p>The proposed v0.1 command set. <code>guess</code> is the preferred verb; a <code>record</code> alias may exist for discoverability. No separate infer, tradeoff, or deviate commands, since <code>--kind</code> is sufficient.</p>
+<pre><code>blinken guess [text] [options]
+blinken guesses [filters] [--compact|--json]
+blinken show &lt;guess-id&gt; [--json]
+blinken review [filters] [--serve] [--no-open]
+blinken accept|reject|followup &lt;guess-id&gt; [--note text]
+blinken accept|reject|followup --all [filters] [--note text] [--yes]
+blinken session start [--agent name] [--model name] [--label key=value]
+blinken session end [session-id]
+blinken sessions [--compact|--json]</code></pre>
+        <h3>Cross-command conventions</h3>
+        <ul>
+          <li>Successful writes print only the affected identifier. <code>--quiet</code> prints nothing.</li>
+          <li><code>--json</code> follows a documented schema and writes JSON only to stdout. Diagnostics go to stderr.</li>
+          <li>Exit code 0 is success. Nonzero codes distinguish usage, missing record, storage, and unexpected failures.</li>
+          <li>Color and glyphs are never required to read output. Respect <code>NO_COLOR</code> and disable decoration when redirected.</li>
+          <li>No progress animation for fast operations.</li>
+          <li>RTK compatibility comes from economical normal behavior, not a Blinken-specific plugin.</li>
+        </ul>
+      </section>
+
+      <section id="model">
+        <h2>Guess model</h2>
+        <p>Ranking defaults must be visible in <code>--help</code>, and output must not imply that omitted agent judgments are measured facts. Review actions update status, note, and timestamp in place. No separate event log in v0.1.</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Field</th><th>Req</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><code>id</code></td><td class="req">yes</td><td>Time-sortable opaque ID, UUIDv7 or ULID, chosen once and used consistently.</td></tr>
+              <tr><td><code>project_id</code></td><td class="req">yes</td><td>Resolved project identity.</td></tr>
+              <tr><td><code>session_id</code></td><td class="req">no</td><td>Logical agent session. Null when none was supplied.</td></tr>
+              <tr><td><code>created_at</code>, <code>updated_at</code></td><td class="req">yes</td><td>UTC timestamps; updated on review metadata changes.</td></tr>
+              <tr><td><code>summary</code></td><td class="req">yes</td><td>Short human-readable statement of the choice.</td></tr>
+              <tr><td><code>ambiguity</code></td><td class="req">no</td><td>What the available information failed to determine.</td></tr>
+              <tr><td><code>chosen_behavior</code></td><td class="req">no</td><td>More detail than the summary when needed.</td></tr>
+              <tr><td><code>kind</code></td><td class="req">no</td><td>assumption, interpretation, tradeoff, deviation, inference.</td></tr>
+              <tr><td><code>confidence</code></td><td class="req">yes</td><td>low, medium, high. Defaults to medium.</td></tr>
+              <tr><td><code>impact</code></td><td class="req">yes</td><td>low, medium, high, critical. Defaults to medium.</td></tr>
+              <tr><td><code>reversibility</code></td><td class="req">yes</td><td>easy, moderate, hard. Defaults to moderate.</td></tr>
+              <tr><td><code>reason</code></td><td class="req">no</td><td>Evidence or rationale for the choice.</td></tr>
+              <tr><td><code>alternative</code></td><td class="req">no</td><td>A plausible competing choice.</td></tr>
+              <tr><td><code>would_ask</code></td><td class="req">no</td><td>What the agent would have asked if asking were free.</td></tr>
+              <tr><td><code>cwd</code></td><td class="req">no</td><td>Working directory at record time; absolute plus project-relative.</td></tr>
+              <tr><td><code>files</code></td><td class="req">no</td><td>Zero or more explicit file and optional line references.</td></tr>
+              <tr><td><code>status</code></td><td class="req">yes</td><td>Defaults to unreviewed.</td></tr>
+              <tr><td><code>review_note</code>, <code>reviewed_at</code></td><td class="req">no</td><td>Human note and timestamp for the current review state.</td></tr>
+              <tr><td><code>deleted_at</code></td><td class="req">no</td><td>Soft deletion; deleted guesses are hidden by default.</td></tr>
+              <tr><td><code>subject_id</code></td><td class="req">no</td><td>Assigned only by explicit grouping.</td></tr>
+              <tr><td><code>metadata_json</code></td><td class="req">no</td><td>Bounded extension metadata, not a substitute for core columns.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="priority">
+        <h2>Review priority</h2>
+        <p>Confidence alone is not an adequate ordering. A low-confidence naming choice may be harmless, while a fairly confident decision about deletion, security, money, or an external contract deserves immediate attention.</p>
+        <blockquote>review priority = uncertainty × impact × difficulty of reversal</blockquote>
+        <p>v0.1 uses a small deterministic heuristic with a plain product. Ties break deterministically, by impact and then creation time. The number is a sorting aid, not a measurement: review output leads with the three labels and a plain-language reason, and the raw score lives in JSON rather than dominating the human UI. The ranking rules live in one testable component shared by the CLI and browser.</p>
+        <div class="calc" aria-label="Priority calculator">
+          <div class="row">
+            <label>Confidence <select id="conf"><option value="3">low</option><option value="2" selected>medium</option><option value="1">high</option></select></label>
+            <label>Impact <select id="imp"><option value="1">low</option><option value="2" selected>medium</option><option value="3">high</option><option value="5">critical</option></select></label>
+            <label>Reversibility <select id="rev"><option value="1">easy</option><option value="2" selected>moderate</option><option value="3">hard</option></select></label>
+          </div>
+          <div class="result">
+            <div class="score" id="score">8</div>
+            <div class="formula" id="formula">2 × 2 × 2</div>
+            <div class="reason" id="reason">medium impact, moderate to reverse</div>
+          </div>
+          <p class="note">Weights: uncertainty low 3 / medium 2 / high 1. Impact low 1 / medium 2 / high 3 / critical 5. Reversibility easy 1 / moderate 2 / hard 3. Range 1 to 45.</p>
+        </div>
+      </section>
+
+      <section id="projects">
+        <h2>Projects and sessions</h2>
+        <h3>Project detection</h3>
+        <p>Data lives in a user-level database, never inside the repository. Starting at the working directory, detection walks upward looking for, in order:</p>
+        <ol>
+          <li>An explicit project root supplied by the caller.</li>
+          <li>An optional Blinken project marker or config file.</li>
+          <li>A Jujutsu or Git repository boundary. Worktrees must work, so <code>.git</code> is not assumed to be a directory.</li>
+          <li>A reasonable fallback root for a non-repository project.</li>
+        </ol>
+        <p>Identity uses the least invasive strategy: a stable opaque project id in the user database, aliases from observed canonical roots, and a separate display name. No required <code>.blinken</code> file, and no identity derived solely from a remote URL. Moving a repository may create a new alias or need an explicit link command; perfect move detection is not an MVP requirement.</p>
+        <p>Cwd is captured separately from the project root, as both the canonical absolute path and a computed project-relative path. Users can disable or redact path capture.</p>
+        <h3>Sessions</h3>
+        <p>A session records an id, optional project, start and optional end timestamps, optional agent and model names, initial working directory, and bounded key/value labels. Concurrent sessions write to the same database. Session end is advisory; abandoned open sessions are valid and never block review.</p>
+      </section>
+
+      <section id="storage">
+        <h2>Storage</h2>
+        <p>SQLite through Go's <code>database/sql</code> with a small, well-supported driver. Whether the driver needs CGO must be documented before committing to it, and the build matrix proven early.</p>
+<pre><code><span class="c">macOS</span>    ~/Library/Application Support/blinken/blinken.db
+<span class="c">Linux</span>    $XDG_DATA_HOME/blinken/blinken.db  <span class="c">or</span>  ~/.local/share/blinken/blinken.db
+<span class="c">Windows</span>  %LOCALAPPDATA%\blinken\blinken.db
+<span class="c">override</span> BLINKEN_DB=... <span class="c">or</span> --db &lt;path&gt;</code></pre>
+        <div class="cols" style="margin-top:18px">
+          <div>
+            <h3>Requirements</h3>
+            <ul>
+              <li>Write-ahead logging enabled.</li>
+              <li>Bounded busy timeout; short write transactions.</li>
+              <li>Automatic, ordered, versioned migrations.</li>
+              <li>Recoverable migration failure before any destructive migration exists.</li>
+              <li>Foreign keys on.</li>
+              <li>Raw SQL and schema are not the public automation contract.</li>
+              <li>Inspection with ordinary SQLite tools documented as an escape hatch.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Initial tables</h3>
+            <ul>
+              <li><code>projects</code></li>
+              <li><code>project_paths</code></li>
+              <li><code>sessions</code></li>
+              <li><code>guesses</code></li>
+              <li><code>guess_files</code></li>
+            </ul>
+            <p style="font-size:14px;color:var(--muted)">Similarity tables (subjects, embeddings, dismissed pairs) wait until that capability is built, unless a nullable subject id materially simplifies the first migration.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="browser">
+        <h2>Browser review</h2>
+        <p><code>blinken review --serve</code> runs inside the same Go executable on the standard <code>net/http</code> server. The UI is plain HTML, CSS, and small vanilla JavaScript modules, compiled into the binary with <code>embed.FS</code> and served from the same origin as its JSON or form endpoints. <a href="https://github.com/tomasz-tomczyk/crit">Crit</a> is the architectural prior art for this packaging shape, without its broader review, proxy, or daemon features.</p>
+        <div class="cols">
+          <div>
+            <h3>The initial UI provides</h3>
+            <ul>
+              <li>Current project and optional session selection.</li>
+              <li>Counts for unreviewed, high-impact, and low-confidence guesses.</li>
+              <li>A priority-sorted review queue with filters for status, kind, confidence, impact, and session.</li>
+              <li>Full guess detail: ambiguity, choice, reason, alternative, would-have-asked.</li>
+              <li>Project-relative cwd and file references.</li>
+              <li>Accept, reject, follow-up, with optional note, individually or in bulk.</li>
+              <li>Clear movement to the next unresolved guess after an action.</li>
+            </ul>
+            <div class="keys">
+              <kbd>j</kbd> <span>/</span> <kbd>k</kbd><span>next / previous</span>
+              <kbd>a</kbd><span>accept</span>
+              <kbd>r</kbd><span>reject</span>
+              <kbd>f</kbd><span>follow-up</span>
+              <kbd>enter</kbd><span>expand or focus</span>
+            </div>
+            <p style="font-size:13.5px;color:var(--muted)">Shortcuts are desirable, not a release blocker.</p>
+          </div>
+          <div>
+            <h3>Local web security</h3>
+            <p style="font-size:14.5px">The server has write access to the database and is treated accordingly.</p>
+            <ul>
+              <li>Bind only to 127.0.0.1 and ::1. No external-listen option without deliberate auth design.</li>
+              <li>Random available port by default; the terminal prints the exact bound URL.</li>
+              <li>Reject non-loopback Host headers to blunt DNS rebinding.</li>
+              <li>Anti-CSRF protection on every state-changing request.</li>
+              <li>No permissive CORS. No user content rendered as raw HTML.</li>
+              <li>Server stops when the foreground process exits.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="privacy">
+        <h2>Privacy, redaction, and deletion</h2>
+        <p>The database may hold proprietary decisions, paths, URLs, or secrets pasted into free text, and is documented as sensitive local data. Blinken must never capture environment variables, command output, or source-file contents automatically. It records only explicitly supplied text plus the small set of inferred metadata described above, and applies configured redaction before persistence, not just at display time. There is no telemetry.</p>
+<pre><code>blinken delete &lt;guess-id&gt;                      <span class="c"># soft delete</span>
+blinken delete --project . --before 2026-01-01
+blinken purge --hard --deleted-before 2026-01-01  <span class="c"># permanent, explicit</span></code></pre>
+        <ul style="margin-top:14px">
+          <li>Delete is soft in v0.1. No restore UI yet, but the row must remain structurally recoverable.</li>
+          <li>Hard purge is the deliberate privacy escape hatch for already soft-deleted records. Whether SQLite reclaims space immediately is documented honestly.</li>
+          <li>Filtered deletion and purge show the match count and require confirmation unless <code>--yes</code> is passed.</li>
+          <li>Redaction may use literal values, user regexes, or glob-like path rules. Built-in heuristics may catch common credential shapes but are never claimed to be complete.</li>
+          <li>No database encryption in the MVP. Rely on OS disk encryption and filesystem permissions.</li>
+        </ul>
+      </section>
+
+      <section id="config">
+        <h2>Configuration</h2>
+        <p>Optional. Defaults work with no config file, stored in the OS-appropriate user location. A project-local file may come later, but Blinken never writes into a repository merely because it was invoked there. Precedence: command-line options, then environment variables, then user config, then built-in defaults.</p>
+<pre><code>[recording]
+capture_cwd = true
+capture_files = true
+
+[privacy]
+redact = ["literal-sensitive-value"]
+ignore_paths = [".env", "secrets/**"]
+
+[review]
+open_browser = true
+include_followup = true</code></pre>
+      </section>
+
+      <section id="architecture">
+        <h2>Implementation architecture</h2>
+        <p>One executable containing the CLI, local server, migrations, and browser assets. The <code>cmd/blinken</code> package stays a thin composition root. Packages stay cohesive without inventing interfaces and boundaries to imitate a large service. Six layers for a tiny first release would be theater.</p>
+<pre><code>cmd/
+  blinken/          <span class="c"># package main and composition root</span>
+internal/
+  cli/              <span class="c"># command parsing and output contracts</span>
+  core/             <span class="c"># models, validation, ranking, use cases</span>
+  storage/          <span class="c"># SQLite access and migrations</span>
+  server/           <span class="c"># loopback HTTP handlers</span>
+web/                <span class="c"># embedded browser assets and embed.go</span></code></pre>
+        <ul style="margin-top:14px">
+          <li>Standard-library <code>net/http</code> with explicit timeouts and graceful shutdown.</li>
+          <li><code>embed.FS</code> for frontend assets, same process and origin as the review API.</li>
+          <li>Plain HTML, CSS, and vanilla JavaScript until measured UI complexity justifies a toolchain.</li>
+          <li><code>database/sql</code> with small explicit data-access code and a deliberately chosen SQLite driver.</li>
+          <li>A mainstream CLI parser picked after checking maintenance, help output, testability, and ergonomics. The standard <code>flag</code> package is acceptable if it fits.</li>
+        </ul>
+        <p>Do not distort the domain model, web UI, or migration strategy merely to avoid CGO before the tradeoff has been measured. Compare pure-Go and CGO-backed SQLite empirically on correctness, portability, build complexity, performance, and size.</p>
+        <h3>Deferred packaging</h3>
+        <p>Automated releases, GitHub Actions workflows, checksummed artifacts, and package-manager publication are explicitly not v0.1 objectives. Development uses <code>go run</code> and <code>go build</code>. After the core loop is proven: GitHub Releases as the source of truth, then Homebrew, winget or Scoop, and <code>go install</code>, in whatever order maintainer capacity allows. Neither npm nor Python should be required to install.</p>
+      </section>
+
+      <section id="similarity">
+        <h2>Semantic similarity, later</h2>
+        <p>An optional capability after v0.1, never required to record, list, or review. No LLM query, no hosted embedding API, no network. A small local embedding model sits behind a thin boundary because its runtime and packaging are likely to change. If embedding generation fails, recording still succeeds.</p>
+<pre><code>type EmbeddingGenerator interface {
+    Generate(ctx context.Context, text string) (Embedding, error)
+}</code></pre>
+        <ul style="margin-top:14px">
+          <li><strong>Input</strong> is built from summary, ambiguity, chosen behavior, reason, alternative, and would-have-asked. Never timestamps, model names, absolute paths, or session ids.</li>
+          <li><strong>Storage</strong> keeps compact binary vectors with model id, version or checksum, dimensions, encoding, input-format version, and timestamp. Vectors from different model versions are never compared.</li>
+          <li><strong>Matching</strong> starts as brute-force cosine similarity within the current project. No vector database or ANN index until measured data demands one. Results are suggestions, shown as a scored list of possibly related guesses.</li>
+          <li><strong>Subjects</strong> are created only by explicit human grouping. A not-related action suppresses the same suggestion again where that is simple.</li>
+          <li><strong>Structural locality</strong> from cwd and file references is stored now but not folded into a scoring formula until evaluation data supports it.</li>
+        </ul>
+      </section>
+
+      <section id="testing">
+        <h2>Testing expectations</h2>
+        <p>Temporary local databases and deterministic fixtures. No test requires network access or credentials.</p>
+        <div class="cols">
+          <div>
+            <h3>Unit</h3>
+            <ul>
+              <li>Guess validation and defaults.</li>
+              <li>Priority ordering and tie-breaking.</li>
+              <li>Project-relative path handling.</li>
+              <li>Compact text formatting and JSON schema.</li>
+              <li>Redaction before persistence.</li>
+            </ul>
+            <h3>Storage integration</h3>
+            <ul>
+              <li>Fresh database creation and ordered migration from every supported version.</li>
+              <li>WAL mode with concurrent short writes; busy-timeout behavior.</li>
+              <li>Foreign-key enforcement, review updates, deletion and purge scoping.</li>
+              <li>Recovery from failed migrations where applicable.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>CLI end-to-end</h3>
+            <ul>
+              <li>Minimal <code>guess</code> prints only an id and creates the expected record.</li>
+              <li><code>--quiet</code>, redirected output, <code>NO_COLOR</code>, stderr, and exit-code contracts.</li>
+              <li>Project and cwd detection in Git, Jujutsu, and non-repository fixtures.</li>
+              <li>Session env-var versus explicit-option precedence.</li>
+            </ul>
+            <h3>Browser</h3>
+            <ul>
+              <li>Server binds only to loopback.</li>
+              <li>Every asset present in <code>embed.FS</code> with the expected content type.</li>
+              <li>Queue and filters render safely; user text is HTML-escaped.</li>
+              <li>Accept, reject, follow-up, and notes update the database.</li>
+              <li>CSRF protection rejects invalid state-changing requests.</li>
+            </ul>
+          </div>
+        </div>
+        <p style="margin-top:8px">Cross-platform CI and packaged-artifact smoke tests arrive with automated releases. Before similarity suggestions ship on by default, a small labeled set of real guesses measures whether the local model retrieves meaningfully related decisions. The acceptance threshold is a product decision, not a cosine number.</p>
+      </section>
+
+      <section id="acceptance">
+        <h2>MVP acceptance criteria</h2>
+        <p>Version 0.1 is useful when all of the following hold. Embeddings, similarity, and subjects are not required.</p>
+        <ol class="criteria">
+          <li>An agent can start a session and record a guess with one short command.</li>
+          <li>Recording succeeds offline into the user-level SQLite database.</li>
+          <li>Multiple local sessions can write without ordinary lock failures.</li>
+          <li>Project, cwd, time, and supplied metadata are persisted accurately.</li>
+          <li>The default successful write output is only an identifier.</li>
+          <li>A user can list and review unresolved guesses in deterministic priority order.</li>
+          <li>A user can accept, reject, or mark a guess for follow-up with an optional note.</li>
+          <li>The browser review offers the same core actions in a loopback-only UI.</li>
+          <li>No telemetry, network request, LLM call, or hosted account is required.</li>
+          <li>Tests cover ranking, storage, the CLI contract, the redaction boundary, and browser write actions.</li>
+        </ol>
+      </section>
+
+      <section id="roadmap">
+        <h2>Phased roadmap</h2>
+        <div class="phases">
+          <div class="phase now">
+            <div class="eyebrow">Phase 0</div>
+            <h3>Product spike</h3>
+            <ul>
+              <li>Validate the CLI vocabulary with hand-written example sessions.</li>
+              <li>Decide the CLI parser and ID format.</li>
+              <li>Prove SQLite WAL behavior with concurrent writers.</li>
+              <li>Prove one Go executable can embed the browser assets and host the loopback UI.</li>
+            </ul>
+          </div>
+          <div class="phase">
+            <div class="eyebrow">Phase 1</div>
+            <h3>v0.1, a useful ledger</h3>
+            <ul>
+              <li>User-level database and migrations; project and cwd detection; optional sessions.</li>
+              <li><code>guess</code>, <code>guesses</code>, <code>show</code>, review-state commands, terminal <code>review</code>.</li>
+              <li>Deterministic priority; compact output and optional JSON.</li>
+              <li>Loopback-only <code>review --serve</code> with a basic embedded UI.</li>
+              <li>Privacy controls, redaction boundary, deletion, no telemetry.</li>
+              <li>A reference agent skill explaining when to record a guess.</li>
+            </ul>
+          </div>
+          <div class="phase">
+            <div class="eyebrow">Phase 2</div>
+            <h3>Similarity experiment</h3>
+            <ul>
+              <li>Select and package a lightweight local embedding model.</li>
+              <li>Lazy or post-insert generation; versioned vector storage.</li>
+              <li>Brute-force project-scoped cosine matching with CLI and browser suggestions.</li>
+              <li>Labeled evaluation set and threshold tuning.</li>
+            </ul>
+          </div>
+          <div class="phase">
+            <div class="eyebrow">Phase 3</div>
+            <h3>Human-confirmed recurring subjects</h3>
+            <ul>
+              <li>Explicit grouping and ungrouping with stable subject ids.</li>
+              <li>Dismissed-match handling and cross-session recurring-guess summaries.</li>
+              <li>Experimental structural-locality adjustments using cwd and files.</li>
+            </ul>
+          </div>
+          <div class="phase">
+            <div class="eyebrow">Later, only if justified</div>
+            <h3>Distribution and integrations</h3>
+            <ul>
+              <li>Automated releases, checksummed artifacts, Homebrew, winget, Scoop, <code>go install</code>.</li>
+              <li>Import, export, and backup ergonomics; project relocation and alias management.</li>
+              <li>Integrations with <code>frick</code>, editors, or agent protocols.</li>
+              <li>A richer UI, and a frontend toolchain only if vanilla JavaScript becomes a demonstrated constraint.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="decisions">
+        <h2>Decisions and open questions</h2>
+        <h3>Resolved by the owner</h3>
+        <div class="tablewrap">
+          <table>
+            <tbody>
+              <tr><td><strong>License</strong></td><td>MIT.</td></tr>
+              <tr><td><strong>Omitted ranking metadata</strong></td><td>Default to medium confidence, medium impact, moderate reversibility so the one-argument <code>guess</code> stays valid.</td></tr>
+              <tr><td><strong>No explicit session</strong></td><td>Leave session id null. No implicit sessions in v0.1.</td></tr>
+              <tr><td><strong>Default review scope</strong></td><td>Unreviewed and followup, unreviewed first on ties. Follow-up inclusion is configurable.</td></tr>
+              <tr><td><strong>Review state and bulk actions</strong></td><td>Persist current status, note, and timestamp. Provide bulk actions. No historical event log in v0.1.</td></tr>
+              <tr><td><strong>Deletion</strong></td><td>Soft-delete by default, recoverable data, separate explicit purge.</td></tr>
+              <tr><td><strong>Release scope</strong></td><td>Automated releases and package publication deferred past v0.1.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>For engineering interrogation</h3>
+        <p>To be resolved through focused research, prototypes, or measured use. The implementing agent brings back evidence and a recommendation rather than asking the owner to choose blindly.</p>
+        <ol class="questions">
+          <li>Which ID format best balances time ordering, Go support, and readability: UUIDv7 or ULID?</li>
+          <li>Which Go CLI parser wins on maintenance, help UX, testability, and ergonomics, or is <code>flag</code> enough?</li>
+          <li>What is the least surprising project identity and relocation workflow across Git worktrees, Jujutsu, monorepos, and no-VCS directories?</li>
+          <li>Does v0.1 need stdin or structured JSON input, or is option-based recording enough?</li>
+          <li>Which path fields display as absolute versus project-relative, and what conservative redaction defaults are appropriate?</li>
+          <li>Are project config files useful enough to justify their precedence and privacy implications in v0.1?</li>
+          <li>Which local embedding model and runtime give acceptable quality, size, cross-platform behavior, license, and Go integration?</li>
+          <li>Should embeddings be generated after insert, lazily during review, or only by an explicit command?</li>
+          <li>What labeled examples and success criteria are sufficient to enable similarity suggestions by default?</li>
+          <li>Which Go SQLite driver best balances correctness, WAL behavior, single-binary builds, CGO, maintenance, and release complexity?</li>
+        </ol>
+      </section>
+
+      <section id="skill">
+        <h2>Guidance for coding-agent skills</h2>
+        <blockquote>Record a guess when you must choose among materially different outcomes and the specification, tests, documentation, or established project conventions do not clearly determine the answer.</blockquote>
+        <div class="cols">
+          <div>
+            <h3>Worth recording</h3>
+            <ul>
+              <li>Unspecified error, retry, fallback, or persistence behavior.</li>
+              <li>Destructive or data-retention semantics.</li>
+              <li>Security and authorization assumptions.</li>
+              <li>Compatibility and externally visible API decisions.</li>
+              <li>Inferred business rules and ambiguous acceptance criteria.</li>
+              <li>Deviations from a request.</li>
+              <li>Architecture choices where requirements do not distinguish the alternatives.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Usually not</h3>
+            <ul>
+              <li>Local variable names.</li>
+              <li>Formatting.</li>
+              <li>Mechanical refactors.</li>
+              <li>Obvious language idioms.</li>
+              <li>Choices fully determined by established project conventions.</li>
+            </ul>
+          </div>
+        </div>
+        <p style="margin-top:14px">An ideal guess says what was ambiguous, what was chosen, why, what alternative was plausible, and what the agent would have asked if asking were free. Record at the moment of the decision, not by reconstructing a ledger at the end of the run.</p>
+      </section>
+
+      <section id="constraint">
+        <h2>Final constraint</h2>
+        <p class="lede">Blinken should earn complexity from observed use.</p>
+        <p>The first release needs to make one loop excellent: an agent encounters consequential ambiguity, records one cheap guess, a human sees the important guesses first, and the human accepts, rejects, or follows up. Everything else is optional until that loop proves useful.</p>
+      </section>
+
+      <div class="footer">
+        <span>Blinken engineering specification, draft</span>
+        <span>Go · SQLite · MIT · no network</span>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+(function () {
+  var conf = document.getElementById('conf'), imp = document.getElementById('imp'), rev = document.getElementById('rev');
+  var score = document.getElementById('score'), formula = document.getElementById('formula'), reason = document.getElementById('reason');
+  function text(sel) { return sel.options[sel.selectedIndex].text; }
+  function update() {
+    var u = +conf.value, i = +imp.value, r = +rev.value;
+    score.textContent = u * i * r;
+    formula.textContent = u + ' × ' + i + ' × ' + r;
+    var parts = [];
+    var c = text(conf), im = text(imp), rv = text(rev);
+    if (c === 'low') parts.push('low confidence');
+    parts.push(im + ' impact');
+    parts.push(rv === 'hard' ? 'hard to reverse' : rv === 'easy' ? 'easy to reverse' : 'moderate to reverse');
+    reason.textContent = parts.join(', ');
+  }
+  [conf, imp, rev].forEach(function (s) { s.addEventListener('change', update); });
+  update();
+
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var sections = links.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+  if ('IntersectionObserver' in window) {
+    var current = null;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) current = e.target.id; });
+      if (!current) return;
+      links.forEach(function (a) { a.classList.toggle('active', a.getAttribute('href') === '#' + current); });
+    }, { rootMargin: '-10% 0px -75% 0px', threshold: 0 });
+    sections.forEach(function (s) { if (s) io.observe(s); });
+  }
+})();
+</script>
+
+</body>
+</html>
