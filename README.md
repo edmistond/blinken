@@ -43,6 +43,66 @@ Ids accept any unique prefix. See `blinken --help` and
 [skills/blinken/SKILL.md](skills/blinken/SKILL.md) for the guidance to give
 an agent.
 
+## Using blinken with your agent
+
+Installing the skill is not enough on its own. An agent notices a good
+moment to record a guess only if a standing instruction tells it to, so
+there are three pieces, in order of importance.
+
+**1. A standing instruction** in the file your agent always reads:
+`CLAUDE.md`, `AGENTS.md`, or equivalent. A few lines are enough:
+
+```markdown
+## Recording guesses
+When you must choose between materially different behaviors and the spec,
+tests, or code do not determine the answer, record it before moving on:
+    blinken guess "what you chose" --would-ask "what you would have asked"
+Run `export BLINKEN_SESSION=$(blinken session start --agent claude-code)` once
+at the start of your work. See the blinken skill for when a guess is worth
+recording and how to rate one.
+```
+
+This repository's own [AGENTS.md](AGENTS.md) is a worked example.
+
+**2. The skill**, which carries the detail the instruction leaves out: the
+three-part test for what counts, the rating scales, and the rich form of the
+command. For Claude Code, copy or symlink it into the personal or project
+skills directory:
+
+```bash
+ln -s "$(pwd)/skills/blinken" ~/.claude/skills/blinken        # every project
+ln -s "$(pwd)/skills/blinken" /path/to/repo/.claude/skills/blinken   # one project
+```
+
+Agents that read `AGENTS.md` but have no skill system still get the standing
+instruction, which is the part that matters most.
+
+**3. A hook that starts the session for you**, so the agent never has to
+remember that step. Claude Code runs `SessionStart` hooks in the project
+directory, and any `export` lines a hook writes to the file named by
+`CLAUDE_ENV_FILE` apply to every later shell command in that session. In
+`.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"export BLINKEN_SESSION=$(blinken session start --agent claude-code)\" >> \"$CLAUDE_ENV_FILE\""
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+With the hook in place, every `blinken guess` the agent runs is attributed to
+that session automatically, and `blinken review --serve` can filter by it.
+
 ## Configuration
 
 Optional, at `~/Library/Application Support/blinken/config.toml` on macOS,

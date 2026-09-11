@@ -11,8 +11,18 @@ Blinken is a local-first Go CLI that lets coding agents record consequential gue
 ## Working conventions
 
 - Checkpoint every turn or major change as a git commit so work can be rolled back.
-- Use `blinken` itself while working here: start a session, record guesses at the moment of ambiguity. Never run `purge` against the default database; point destructive tests at `--db /tmp/...`.
+- Never run `purge` against the default database; point destructive tests at `--db /tmp/...`.
 - `blinken.png` is the project logo.
+
+## Recording guesses
+
+This project dogfoods its own tool. When you must choose between materially different behaviors and the spec, tests, or existing code do not determine the answer, record it before moving on:
+
+```bash
+blinken guess "what you chose" --would-ask "what you would have asked"
+```
+
+Run `export BLINKEN_SESSION=$(blinken session start --agent <agent> --model <model>)` once at the start of your work so guesses group by session. Add `--kind`, `--confidence`, `--impact`, `--reversibility`, `--ambiguity`, `--reason`, `--alternative`, and `--file` when the choice is consequential. Record at the moment of the decision, not at the end. See `skills/blinken/SKILL.md` for what counts as a guess and how to rate one.
 
 ## Layout
 
